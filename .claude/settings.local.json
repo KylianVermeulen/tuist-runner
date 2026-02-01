@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(JAR=\"/Users/kylianvermeulen/.gradle/caches/9.2.1/transforms/d6ce80c0be811e4d84a7af5301916de6/transformed/ideaIU-2025.2.5-aarch64/lib/app-client.jar\")",
+      "Bash(javap:*)"
+    ]
+  }
+}

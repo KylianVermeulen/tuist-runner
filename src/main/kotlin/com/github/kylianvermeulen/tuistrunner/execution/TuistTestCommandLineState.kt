@@ -45,6 +45,10 @@ class TuistTestCommandLineState(
             addParameter("--scheme")
             addParameter(configuration.schemeName)
 
+            configuration.buildOnlyTestingArgument()?.let { onlyTesting ->
+                addParameter("-only-testing:$onlyTesting")
+            }
+
             val additionalArgs = configuration.additionalArguments.trim()
             if (additionalArgs.isNotEmpty()) {
                 addParameters(ProgramParametersConfigurator.expandMacrosAndParseParameters(additionalArgs))

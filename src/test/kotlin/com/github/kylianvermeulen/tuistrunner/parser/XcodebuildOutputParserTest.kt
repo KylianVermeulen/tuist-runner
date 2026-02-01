@@ -73,7 +73,8 @@ class XcodebuildOutputParserTest {
         val event = result[0] as TestEvent.TestStarted
         assertEquals("testExample", event.name)
         assertEquals("FeatureTests", event.className)
-        assertEquals("tuist-test://FeatureTests/testExample", event.locationHint)
+        assertEquals("MyAppTests", event.targetName)
+        assertEquals("tuist-test://MyAppTests/FeatureTests/testExample", event.locationHint)
     }
 
     @Test
@@ -82,7 +83,18 @@ class XcodebuildOutputParserTest {
         assertNotNull(result)
         val event = result!![0] as TestEvent.TestStarted
         assertEquals("MyTests", event.className)
+        assertEquals("SomeModule", event.targetName)
         assertEquals("testFoo", event.name)
+    }
+
+    @Test
+    fun `handles unqualified class name with no target`() {
+        val result = parser.processLine("Test Case '-[FeatureTests testBar]' started.")
+        assertNotNull(result)
+        val event = result!![0] as TestEvent.TestStarted
+        assertEquals("FeatureTests", event.className)
+        assertNull(event.targetName)
+        assertEquals("tuist-test://FeatureTests/testBar", event.locationHint)
     }
 
     // --- Test case pass ---
@@ -127,6 +139,8 @@ class XcodebuildOutputParserTest {
 
         val failEvent = result[0] as TestEvent.TestFailed
         assertEquals("testFailure", failEvent.name)
+        assertEquals("FeatureTests", failEvent.className)
+        assertEquals("MyAppTests", failEvent.targetName)
         assertEquals("XCTAssertEqual failed: (\"a\") is not equal to (\"b\")", failEvent.message)
         assertTrue(failEvent.details.contains("/path/File.swift:42"))
         assertEquals(5L, failEvent.durationMs)
@@ -216,6 +230,9 @@ class XcodebuildOutputParserTest {
         val testStarted = events.filterIsInstance<TestEvent.TestStarted>()
         assertEquals("Should have 2 tests started", 2, testStarted.size)
         assertEquals("testExample", testStarted[0].name)
+        assertEquals("FeatureTests", testStarted[0].className)
+        assertEquals("MyAppTests", testStarted[0].targetName)
+        assertEquals("tuist-test://MyAppTests/FeatureTests/testExample", testStarted[0].locationHint)
         assertEquals("testAnother", testStarted[1].name)
 
         val testFinished = events.filterIsInstance<TestEvent.TestFinished>()

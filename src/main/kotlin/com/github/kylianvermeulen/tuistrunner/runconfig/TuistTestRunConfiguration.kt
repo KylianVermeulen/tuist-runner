@@ -12,7 +12,7 @@ class TuistTestRunConfiguration(
     project: Project,
     factory: ConfigurationFactory,
     name: String,
-) : RunConfigurationBase<TuistTestConfigurationOptions>(project, factory, name) {
+) : LocatableConfigurationBase<TuistTestConfigurationOptions>(project, factory, name) {
 
     override fun getOptions(): TuistTestConfigurationOptions =
         super.getOptions() as TuistTestConfigurationOptions
@@ -24,6 +24,33 @@ class TuistTestRunConfiguration(
     var additionalArguments: String
         get() = options.additionalArguments
         set(value) { options.additionalArguments = value }
+
+    var testTarget: String?
+        get() = options.testTarget
+        set(value) { options.testTarget = value }
+
+    var testClass: String?
+        get() = options.testClass
+        set(value) { options.testClass = value }
+
+    var testMethod: String?
+        get() = options.testMethod
+        set(value) { options.testMethod = value }
+
+    fun buildOnlyTestingArgument(): String? {
+        val parts = listOfNotNull(testTarget, testClass, testMethod)
+        return if (parts.isEmpty()) null else parts.joinToString("/")
+    }
+
+    override fun suggestedName(): String {
+        val cls = testClass
+        val method = testMethod
+        return when {
+            cls != null && method != null -> "$cls.$method"
+            cls != null -> cls
+            else -> schemeName.ifBlank { "Tuist Test" }
+        }
+    }
 
     override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> =
         TuistTestConfigurationEditor(project)

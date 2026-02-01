@@ -9,10 +9,17 @@ class XcodebuildOutputParser {
     sealed class TestEvent {
         data class SuiteStarted(val name: String, val locationHint: String) : TestEvent()
         data class SuiteFinished(val name: String) : TestEvent()
-        data class TestStarted(val name: String, val className: String, val locationHint: String) : TestEvent()
+        data class TestStarted(
+            val name: String,
+            val className: String,
+            val targetName: String?,
+            val locationHint: String,
+        ) : TestEvent()
         data class TestFinished(val name: String, val durationMs: Long) : TestEvent()
         data class TestFailed(
             val name: String,
+            val className: String,
+            val targetName: String?,
             val message: String,
             val details: String,
             val durationMs: Long,
@@ -20,6 +27,8 @@ class XcodebuildOutputParser {
     }
 
     private val pendingFailures = mutableListOf<FailureInfo>()
+    private var currentTargetName: String? = null
+    private var currentClassName: String? = null
 
     private data class FailureInfo(
         val filePath: String,
@@ -73,11 +82,15 @@ class XcodebuildOutputParser {
 
     private fun handleTestStarted(line: String): List<TestEvent>? {
         val match = TEST_STARTED.matchEntire(line) ?: return null
-        val className = extractClassName(match.groupValues[1])
+        val (targetName, className) = extractTargetAndClass(match.groupValues[1])
         val methodName = match.groupValues[2]
 
+        currentTargetName = targetName
+        currentClassName = className
         pendingFailures.clear()
-        return listOf(TestEvent.TestStarted(methodName, className, "tuist-test://$className/$methodName"))
+
+        val locationPath = if (targetName != null) "$targetName/$className/$methodName" else "$className/$methodName"
+        return listOf(TestEvent.TestStarted(methodName, className, targetName, "tuist-test://$locationPath"))
     }
 
     private fun handleTestPassed(line: String): List<TestEvent>? {
@@ -107,7 +120,14 @@ class XcodebuildOutputParser {
         }
 
         val events = listOf(
-            TestEvent.TestFailed(methodName, failureMessage, failureDetails, durationMs),
+            TestEvent.TestFailed(
+                methodName,
+                currentClassName ?: extractTargetAndClass(match.groupValues[1]).second,
+                currentTargetName,
+                failureMessage,
+                failureDetails,
+                durationMs,
+            ),
             TestEvent.TestFinished(methodName, durationMs),
         )
         pendingFailures.clear()
@@ -126,8 +146,16 @@ class XcodebuildOutputParser {
         return emptyList()
     }
 
-    private fun extractClassName(qualifiedName: String): String =
-        qualifiedName.substringAfterLast('.')
+    private fun extractTargetAndClass(qualifiedName: String): Pair<String?, String> {
+        val dotIndex = qualifiedName.indexOf('.')
+        return if (dotIndex >= 0) {
+            val targetName = qualifiedName.substring(0, dotIndex)
+            val className = qualifiedName.substring(dotIndex + 1).substringAfterLast('.')
+            Pair(targetName, className)
+        } else {
+            Pair(null, qualifiedName)
+        }
+    }
 
     private fun parseDurationMs(seconds: String): Long =
         (seconds.toDouble() * 1000).toLong()

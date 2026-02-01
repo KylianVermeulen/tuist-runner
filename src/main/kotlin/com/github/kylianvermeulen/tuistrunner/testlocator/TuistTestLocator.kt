@@ -40,9 +40,14 @@ class TuistTestLocator : SMTestLocator {
     }
 
     private fun locateTest(path: String, project: Project, scope: GlobalSearchScope): List<Location<*>> {
-        val parts = path.split("/", limit = 2)
-        if (parts.size != 2) return emptyList()
-        val (className, methodName) = parts
+        val parts = path.split("/")
+        val className: String
+        val methodName: String
+        when (parts.size) {
+            3 -> { className = parts[1]; methodName = parts[2] }
+            2 -> { className = parts[0]; methodName = parts[1] }
+            else -> return emptyList()
+        }
 
         val fileName = "$className.swift"
         val files = FilenameIndex.getVirtualFilesByName(fileName, scope)

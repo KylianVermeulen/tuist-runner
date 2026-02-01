@@ -20,6 +20,9 @@ class TuistTestConfigurationEditor(private val project: Project) :
         isEditable = true
     }
     private val additionalArgsField = JTextField()
+    private val testTargetField = JTextField().apply { isEditable = false }
+    private val testClassField = JTextField().apply { isEditable = false }
+    private val testMethodField = JTextField().apply { isEditable = false }
 
     init {
         loadSchemes()
@@ -43,11 +46,17 @@ class TuistTestConfigurationEditor(private val project: Project) :
     override fun resetEditorFrom(configuration: TuistTestRunConfiguration) {
         schemeComboBox.editor.item = configuration.schemeName
         additionalArgsField.text = configuration.additionalArguments
+        testTargetField.text = configuration.testTarget ?: ""
+        testClassField.text = configuration.testClass ?: ""
+        testMethodField.text = configuration.testMethod ?: ""
     }
 
     override fun applyEditorTo(configuration: TuistTestRunConfiguration) {
         configuration.schemeName = (schemeComboBox.editor.item as? String)?.trim() ?: ""
         configuration.additionalArguments = additionalArgsField.text.trim()
+        configuration.testTarget = testTargetField.text.ifBlank { null }
+        configuration.testClass = testClassField.text.ifBlank { null }
+        configuration.testMethod = testMethodField.text.ifBlank { null }
     }
 
     override fun createEditor(): JComponent = panel {
@@ -65,6 +74,21 @@ class TuistTestConfigurationEditor(private val project: Project) :
         }
         row(TuistBundle.message("runconfig.editor.additionalArgs.label")) {
             cell(additionalArgsField)
+                .align(AlignX.FILL)
+                .resizableColumn()
+        }
+        row(TuistBundle.message("runconfig.editor.testTarget.label")) {
+            cell(testTargetField)
+                .align(AlignX.FILL)
+                .resizableColumn()
+        }
+        row(TuistBundle.message("runconfig.editor.testClass.label")) {
+            cell(testClassField)
+                .align(AlignX.FILL)
+                .resizableColumn()
+        }
+        row(TuistBundle.message("runconfig.editor.testMethod.label")) {
+            cell(testMethodField)
                 .align(AlignX.FILL)
                 .resizableColumn()
         }
