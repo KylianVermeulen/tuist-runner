@@ -1,0 +1,39 @@
+package com.github.kylianvermeulen.tuistrunner.runconfig
+
+import com.intellij.execution.Executor
+import com.intellij.execution.configurations.*
+import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.openapi.options.SettingsEditor
+import com.intellij.openapi.project.Project
+import com.github.kylianvermeulen.tuistrunner.TuistBundle
+import com.github.kylianvermeulen.tuistrunner.execution.TuistTestCommandLineState
+
+class TuistTestRunConfiguration(
+    project: Project,
+    factory: ConfigurationFactory,
+    name: String,
+) : RunConfigurationBase<TuistTestConfigurationOptions>(project, factory, name) {
+
+    override fun getOptions(): TuistTestConfigurationOptions =
+        super.getOptions() as TuistTestConfigurationOptions
+
+    var schemeName: String
+        get() = options.schemeName
+        set(value) { options.schemeName = value }
+
+    var additionalArguments: String
+        get() = options.additionalArguments
+        set(value) { options.additionalArguments = value }
+
+    override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> =
+        TuistTestConfigurationEditor(project)
+
+    override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState =
+        TuistTestCommandLineState(environment, this)
+
+    override fun checkConfiguration() {
+        if (schemeName.isBlank()) {
+            throw RuntimeConfigurationError(TuistBundle.message("runconfig.validation.scheme.empty"))
+        }
+    }
+}

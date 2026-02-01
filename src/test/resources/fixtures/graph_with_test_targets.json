@@ -1,0 +1,49 @@
+{
+  "name": "MyWorkspace",
+  "projects": {
+    "/path/to/Liftix": {
+      "path": "/path/to/Liftix",
+      "name": "Liftix",
+      "schemes": [],
+      "targets": {
+        "Liftix": {
+          "name": "Liftix",
+          "product": "app",
+          "sources": []
+        },
+        "LiftixTests": {
+          "name": "LiftixTests",
+          "product": "unitTests",
+          "sources": []
+        },
+        "LiftixUITests": {
+          "name": "LiftixUITests",
+          "product": "uiTests",
+          "sources": []
+        }
+      }
+    },
+    "/path/to/Core": {
+      "path": "/path/to/Core",
+      "name": "Core",
+      "schemes": [],
+      "targets": {
+        "Core": {
+          "name": "Core",
+          "product": "framework",
+          "sources": []
+        },
+        "CoreTests": {
+          "name": "CoreTests",
+          "product": "unitTests",
+          "sources": []
+        },
+        "CoreIntegrationTests": {
+          "name": "CoreIntegrationTests",
+          "product": "unitTests",
+          "sources": []
+        }
+      }
+    }
+  }
+}

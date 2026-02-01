@@ -1,0 +1,17 @@
+{
+  "name": "EmptyWorkspace",
+  "projects": {
+    "/path/to/Lib": {
+      "path": "/path/to/Lib",
+      "name": "Lib",
+      "schemes": [],
+      "targets": {
+        "Lib": {
+          "name": "Lib",
+          "product": "framework",
+          "sources": []
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "name": "MyWorkspace",
+  "projects": {
+    "/path/to/App": {
+      "path": "/path/to/App",
+      "name": "App",
+      "schemes": [
+        {
+          "name": "App",
+          "buildAction": {},
+          "testAction": {
+            "targets": [
+              {
+                "target": {
+                  "name": "AppTests",
+                  "projectPath": "/path/to/App"
+                }
+              },
+              {
+                "target": {
+                  "name": "AppUITests",
+                  "projectPath": "/path/to/App"
+                }
+              }
+            ]
+          },
+          "runAction": {}
+        },
+        {
+          "name": "AppRelease",
+          "buildAction": {},
+          "testAction": null,
+          "runAction": {}
+        }
+      ],
+      "targets": {
+        "App": {
+          "name": "App",
+          "product": "app",
+          "sources": []
+        },
+        "AppTests": {
+          "name": "AppTests",
+          "product": "unitTests",
+          "sources": []
+        },
+        "AppUITests": {
+          "name": "AppUITests",
+          "product": "uiTests",
+          "sources": []
+        }
+      }
+    }
+  }
+}
