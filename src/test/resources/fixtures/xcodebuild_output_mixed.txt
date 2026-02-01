@@ -1,0 +1,16 @@
+Test Suite 'AllTests' started at 2025-01-15 10:30:00.000
+Test Suite 'MyAppTests.xctest' started at 2025-01-15 10:30:00.000
+Test Suite 'FeatureTests' started at 2025-01-15 10:30:00.000
+Test Case '-[MyAppTests.FeatureTests testPassing]' started.
+Test Case '-[MyAppTests.FeatureTests testPassing]' passed (0.001 seconds).
+Test Case '-[MyAppTests.FeatureTests testFailing]' started.
+/Users/dev/Project/Tests/FeatureTests.swift:20: error: -[MyAppTests.FeatureTests testFailing] : XCTAssertTrue failed
+/Users/dev/Project/Tests/FeatureTests.swift:21: error: -[MyAppTests.FeatureTests testFailing] : XCTAssertEqual failed: ("1") is not equal to ("2")
+Test Case '-[MyAppTests.FeatureTests testFailing]' failed (0.003 seconds).
+Test Suite 'FeatureTests' failed at 2025-01-15 10:30:00.004.
+Test Suite 'NetworkTests' started at 2025-01-15 10:30:00.005
+Test Case '-[MyAppTests.NetworkTests testRequest]' started.
+Test Case '-[MyAppTests.NetworkTests testRequest]' passed (0.010 seconds).
+Test Suite 'NetworkTests' passed at 2025-01-15 10:30:00.015.
+Test Suite 'MyAppTests.xctest' failed at 2025-01-15 10:30:00.015.
+Test Suite 'AllTests' failed at 2025-01-15 10:30:00.015.
