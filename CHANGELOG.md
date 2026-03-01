@@ -4,7 +4,7 @@
 
 ## [Unreleased]
 
-## [0.0.1]
+## [0.1.0]
 ### Added
 - Automatic Tuist project detection (looks for `Tuist/` directory or `Project.swift`)
 - Tuist CLI discovery with notification when CLI is not found
