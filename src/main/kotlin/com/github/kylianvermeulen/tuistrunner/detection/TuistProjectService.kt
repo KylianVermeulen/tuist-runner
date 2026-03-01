@@ -18,6 +18,9 @@ class TuistProjectService(private val project: Project) {
     var availableSchemes: List<TuistScheme> = emptyList()
         private set
 
+    var availableSimulators: List<Simulator> = emptyList()
+        private set
+
     fun detectProject() {
         val basePath = project.basePath ?: return
         isTuistProject = TuistProjectDetector.isTuistProject(basePath)
@@ -30,6 +33,7 @@ class TuistProjectService(private val project: Project) {
         }
 
         refreshSchemes()
+        refreshSimulators()
     }
 
     fun refreshSchemes() {
@@ -37,5 +41,10 @@ class TuistProjectService(private val project: Project) {
         val executable = tuistExecutablePath ?: return
         availableSchemes = TuistSchemeProvider.findTestSchemes(basePath, executable)
         LOG.info("Discovered ${availableSchemes.size} test schemes: ${availableSchemes.map { it.name }}")
+    }
+
+    fun refreshSimulators() {
+        availableSimulators = SimulatorProvider.listAvailableSimulators()
+        LOG.info("Discovered ${availableSimulators.size} available simulators")
     }
 }

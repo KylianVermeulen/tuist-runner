@@ -20,6 +20,9 @@ class TuistTestConfigurationOptions : LocatableRunConfigurationOptions() {
     private val _testMethod: StoredProperty<String?> =
         string(null as String?).provideDelegate(this, "testMethod")
 
+    private val _destinationUdid: StoredProperty<String?> =
+        string(null as String?).provideDelegate(this, "destinationUdid")
+
     var schemeName: String
         get() = _schemeName.getValue(this) ?: ""
         set(value) { _schemeName.setValue(this, value) }
@@ -39,4 +42,8 @@ class TuistTestConfigurationOptions : LocatableRunConfigurationOptions() {
     var testMethod: String?
         get() = _testMethod.getValue(this)
         set(value) { _testMethod.setValue(this, value) }
+
+    var destinationUdid: String?
+        get() = _destinationUdid.getValue(this)
+        set(value) { _destinationUdid.setValue(this, value) }
 }

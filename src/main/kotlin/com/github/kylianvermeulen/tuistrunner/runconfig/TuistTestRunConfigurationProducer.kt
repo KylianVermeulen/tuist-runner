@@ -51,6 +51,12 @@ class TuistTestRunConfigurationProducer : LazyRunConfigurationProducer<TuistTest
         configuration.testTarget = testTarget
         configuration.testClass = testContext.className
         configuration.testMethod = testContext.methodName
+
+        val simulators = service.availableSimulators
+        val defaultSimulator = simulators.firstOrNull { it.state == "Booted" }
+            ?: simulators.firstOrNull { it.runtime.startsWith("iOS") }
+        configuration.destinationUdid = defaultSimulator?.udid
+
         configuration.name = configuration.suggestedName()
 
         return true

@@ -37,6 +37,15 @@ class TuistTestRunConfiguration(
         get() = options.testMethod
         set(value) { options.testMethod = value }
 
+    var destinationUdid: String?
+        get() = options.destinationUdid
+        set(value) { options.destinationUdid = value }
+
+    fun buildDestinationArgument(): String? {
+        val udid = destinationUdid
+        return if (udid.isNullOrBlank()) null else "id=$udid"
+    }
+
     fun buildOnlyTestingArgument(): String? {
         val parts = listOfNotNull(testTarget, testClass, testMethod)
         return if (parts.isEmpty()) null else parts.joinToString("/")

@@ -45,6 +45,11 @@ class TuistTestCommandLineState(
             addParameter("-scheme")
             addParameter(configuration.schemeName)
 
+            configuration.buildDestinationArgument()?.let { destination ->
+                addParameter("-destination")
+                addParameter(destination)
+            }
+
             configuration.buildOnlyTestingArgument()?.let { onlyTesting ->
                 addParameter("-only-testing:$onlyTesting")
             }
