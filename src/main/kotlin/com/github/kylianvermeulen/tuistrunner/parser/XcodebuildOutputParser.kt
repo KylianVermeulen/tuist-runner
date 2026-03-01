@@ -47,9 +47,10 @@ class XcodebuildOutputParser {
 
         // Swift Testing native output format
         private val SWIFT_SUITE_STARTED = Regex("""^\s*Suite "([^"]+)" started$""")
-        private val SWIFT_SUITE_FINISHED = Regex("""^\s*Suite "([^"]+)" (passed|failed) after (\d+\.\d+) seconds$""")
+        private val SWIFT_SUITE_FINISHED = Regex("""^\s*Suite "([^"]+)" (passed|failed) after (\d+\.\d+) seconds.*$""")
         private val SWIFT_TEST_PASSED = Regex("""^\s*[✔✓] "([^"]+)" \((\d+\.\d+) seconds\)$""")
-        private val SWIFT_TEST_FAILED = Regex("""^\s*[✘✗] "([^"]+)" \((\d+\.\d+) seconds\)$""")
+        private val SWIFT_TEST_FAILED = Regex("""^\s*[✘✗✖] "([^"]+)" \((\d+\.\d+) seconds\).*$""")
+        private val SWIFT_ISSUE_MESSAGE = Regex("""^\s*\[!\]\s+Test "([^"]+)" recorded an issue at (.+):(\d+):\d+: (.+)$""")
     }
 
     /**
@@ -71,6 +72,7 @@ class XcodebuildOutputParser {
             ?: handleFailureMessage(line)
             ?: handleSwiftSuiteStarted(line)
             ?: handleSwiftSuiteFinished(line)
+            ?: handleSwiftIssueMessage(line)
             ?: handleSwiftTestPassed(line)
             ?: handleSwiftTestFailed(line)
     }
@@ -185,24 +187,50 @@ class XcodebuildOutputParser {
         )
     }
 
+    private fun handleSwiftIssueMessage(line: String): List<TestEvent>? {
+        val match = SWIFT_ISSUE_MESSAGE.matchEntire(line) ?: return null
+        pendingFailures.add(
+            FailureInfo(
+                filePath = match.groupValues[2],
+                lineNumber = match.groupValues[3].toIntOrNull() ?: 0,
+                message = match.groupValues[4],
+            )
+        )
+        return emptyList()
+    }
+
     private fun handleSwiftTestFailed(line: String): List<TestEvent>? {
         val match = SWIFT_TEST_FAILED.matchEntire(line) ?: return null
         val testName = match.groupValues[1]
         val durationMs = parseDurationMs(match.groupValues[2])
         val suiteName = currentSwiftTestingSuite ?: "UnknownSuite"
 
-        return listOf(
+        val failureMessage = if (pendingFailures.isNotEmpty()) {
+            pendingFailures.joinToString("\n") { it.message }
+        } else {
+            "Test failed"
+        }
+
+        val failureDetails = if (pendingFailures.isNotEmpty()) {
+            pendingFailures.joinToString("\n") { "${it.filePath}:${it.lineNumber}: ${it.message}" }
+        } else {
+            ""
+        }
+
+        val events = listOf(
             TestEvent.TestStarted(testName, suiteName, null, "tuist-test://$suiteName/$testName"),
             TestEvent.TestFailed(
                 testName,
                 suiteName,
                 null,
-                "Test failed",
-                "",
+                failureMessage,
+                failureDetails,
                 durationMs,
             ),
             TestEvent.TestFinished(testName, durationMs),
         )
+        pendingFailures.clear()
+        return events
     }
 
     private fun extractTargetAndClass(qualifiedName: String): Pair<String?, String> {

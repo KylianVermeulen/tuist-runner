@@ -288,7 +288,7 @@ class XcodebuildOutputParserTest {
     @Test
     fun `emits TestStarted TestFailed and TestFinished for failing Swift Testing test`() {
         parser.processLine("""Suite "FeatureTests" started""")
-        val result = parser.processLine("    \u2718 \"creates a barbell\" (0.208 seconds)")
+        val result = parser.processLine("    \u2716 \"creates a barbell\" (0.208 seconds) 1 issue(s)")
         assertNotNull(result)
         assertEquals(3, result!!.size)
 
@@ -306,6 +306,20 @@ class XcodebuildOutputParserTest {
         val finishEvent = result[2] as TestEvent.TestFinished
         assertEquals("creates a barbell", finishEvent.name)
         assertEquals(208L, finishEvent.durationMs)
+    }
+
+    @Test
+    fun `accumulates Swift Testing issue messages into failure`() {
+        parser.processLine("""Suite "FeatureTests" started""")
+        val issueResult = parser.processLine("""    [!]  Test "my test" recorded an issue at File.swift:38:9: Expectation failed: ("a") == "b"""")
+        assertNotNull("Should match the pattern", issueResult)
+        assertTrue("Should produce no events (accumulating)", issueResult!!.isEmpty())
+
+        val result = parser.processLine("    \u2716 \"my test\" (0.467 seconds) 1 issue(s)")
+        assertNotNull(result)
+        val failEvent = result!![1] as TestEvent.TestFailed
+        assertTrue(failEvent.message.contains("Expectation failed"))
+        assertTrue(failEvent.details.contains("File.swift:38"))
     }
 
     @Test
@@ -411,9 +425,11 @@ class XcodebuildOutputParserTest {
 
         val testFailed = events.filterIsInstance<TestEvent.TestFailed>()
         assertEquals("Should have 1 failure", 1, testFailed.size)
-        assertEquals("creates barbell with zero weight", testFailed[0].name)
-        assertEquals("CreateCustomBarbellCommandHandler", testFailed[0].className)
+        assertEquals("creates exercise with all metadata", testFailed[0].name)
+        assertEquals("CreateExerciseCommandHandler", testFailed[0].className)
         assertNull(testFailed[0].targetName)
+        assertTrue(testFailed[0].message.contains("Expectation failed"))
+        assertTrue(testFailed[0].details.contains("ExerciseCommandHandlerTests.swift:38"))
 
         val suiteFinished = events.filterIsInstance<TestEvent.SuiteFinished>()
         assertEquals("Should have 1 suite finished", 1, suiteFinished.size)
