@@ -29,6 +29,7 @@ class XcodebuildOutputParser {
     private val pendingFailures = mutableListOf<FailureInfo>()
     private var currentTargetName: String? = null
     private var currentClassName: String? = null
+    private var currentSwiftTestingSuite: String? = null
 
     private data class FailureInfo(
         val filePath: String,
@@ -43,6 +44,12 @@ class XcodebuildOutputParser {
         private val TEST_PASSED = Regex("""^\s*Test Case '-\[(\S+)\s+(\S+)\]' passed \((\d+\.\d+) seconds\)\.$""")
         private val TEST_FAILED = Regex("""^\s*Test Case '-\[(\S+)\s+(\S+)\]' failed \((\d+\.\d+) seconds\)\.$""")
         private val FAILURE_MESSAGE = Regex("""^(.+):(\d+): error: -\[(\S+)\s+(\S+)\] : (.+)$""")
+
+        // Swift Testing native output format
+        private val SWIFT_SUITE_STARTED = Regex("""^\s*Suite "([^"]+)" started$""")
+        private val SWIFT_SUITE_FINISHED = Regex("""^\s*Suite "([^"]+)" (passed|failed) after (\d+\.\d+) seconds$""")
+        private val SWIFT_TEST_PASSED = Regex("""^\s*[✔✓] "([^"]+)" \((\d+\.\d+) seconds\)$""")
+        private val SWIFT_TEST_FAILED = Regex("""^\s*[✘✗] "([^"]+)" \((\d+\.\d+) seconds\)$""")
     }
 
     /**
@@ -62,6 +69,10 @@ class XcodebuildOutputParser {
             ?: handleTestPassed(line)
             ?: handleTestFailed(line)
             ?: handleFailureMessage(line)
+            ?: handleSwiftSuiteStarted(line)
+            ?: handleSwiftSuiteFinished(line)
+            ?: handleSwiftTestPassed(line)
+            ?: handleSwiftTestFailed(line)
     }
 
     private fun handleSuiteStarted(line: String): List<TestEvent>? {
@@ -146,6 +157,54 @@ class XcodebuildOutputParser {
         return emptyList()
     }
 
+    private fun handleSwiftSuiteStarted(line: String): List<TestEvent>? {
+        val match = SWIFT_SUITE_STARTED.matchEntire(line) ?: return null
+        val suiteName = match.groupValues[1]
+        currentSwiftTestingSuite = suiteName
+
+        return listOf(TestEvent.SuiteStarted(suiteName, "tuist-suite://$suiteName"))
+    }
+
+    private fun handleSwiftSuiteFinished(line: String): List<TestEvent>? {
+        val match = SWIFT_SUITE_FINISHED.matchEntire(line) ?: return null
+        val suiteName = match.groupValues[1]
+        currentSwiftTestingSuite = null
+
+        return listOf(TestEvent.SuiteFinished(suiteName))
+    }
+
+    private fun handleSwiftTestPassed(line: String): List<TestEvent>? {
+        val match = SWIFT_TEST_PASSED.matchEntire(line) ?: return null
+        val testName = match.groupValues[1]
+        val durationMs = parseDurationMs(match.groupValues[2])
+        val suiteName = currentSwiftTestingSuite ?: "UnknownSuite"
+
+        return listOf(
+            TestEvent.TestStarted(testName, suiteName, null, "tuist-test://$suiteName/$testName"),
+            TestEvent.TestFinished(testName, durationMs),
+        )
+    }
+
+    private fun handleSwiftTestFailed(line: String): List<TestEvent>? {
+        val match = SWIFT_TEST_FAILED.matchEntire(line) ?: return null
+        val testName = match.groupValues[1]
+        val durationMs = parseDurationMs(match.groupValues[2])
+        val suiteName = currentSwiftTestingSuite ?: "UnknownSuite"
+
+        return listOf(
+            TestEvent.TestStarted(testName, suiteName, null, "tuist-test://$suiteName/$testName"),
+            TestEvent.TestFailed(
+                testName,
+                suiteName,
+                null,
+                "Test failed",
+                "",
+                durationMs,
+            ),
+            TestEvent.TestFinished(testName, durationMs),
+        )
+    }
+
     private fun extractTargetAndClass(qualifiedName: String): Pair<String?, String> {
         val dotIndex = qualifiedName.indexOf('.')
         return if (dotIndex >= 0) {
@@ -161,5 +220,5 @@ class XcodebuildOutputParser {
         (seconds.toDouble() * 1000).toLong()
 
     private fun shouldSkipSuite(name: String): Boolean =
-        name == "AllTests" || name.endsWith(".xctest")
+        name == "AllTests" || name == "Selected tests" || name.endsWith(".xctest")
 }

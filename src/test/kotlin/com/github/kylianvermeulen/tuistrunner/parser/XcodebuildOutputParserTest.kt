@@ -217,6 +217,105 @@ class XcodebuildOutputParserTest {
         assertNull("Whitespace line should return null", result)
     }
 
+    // --- "Selected tests" suite filtering (XCTest format) ---
+
+    @Test
+    fun `filters out Selected tests suite`() {
+        val result = parser.processLine("Test Suite 'Selected tests' started at 2025-01-15 10:30:00.000")
+        assertNotNull("Should match the pattern", result)
+        assertTrue("Should produce no events (filtered)", result!!.isEmpty())
+    }
+
+    @Test
+    fun `filters out Selected tests suite on finish`() {
+        val result = parser.processLine("Test Suite 'Selected tests' passed at 2025-01-15 10:30:00.043.")
+        assertNotNull("Should match the pattern", result)
+        assertTrue("Should produce no events (filtered)", result!!.isEmpty())
+    }
+
+    // --- Swift Testing suite handling ---
+
+    @Test
+    fun `emits SuiteStarted for Swift Testing suite`() {
+        val result = parser.processLine("""Suite "MyTests" started""")
+        assertNotNull(result)
+        assertEquals(1, result!!.size)
+        val event = result[0] as TestEvent.SuiteStarted
+        assertEquals("MyTests", event.name)
+        assertEquals("tuist-suite://MyTests", event.locationHint)
+    }
+
+    @Test
+    fun `emits SuiteFinished for passing Swift Testing suite`() {
+        val result = parser.processLine("""Suite "MyTests" passed after 0.651 seconds""")
+        assertNotNull(result)
+        assertEquals(1, result!!.size)
+        val event = result[0] as TestEvent.SuiteFinished
+        assertEquals("MyTests", event.name)
+    }
+
+    @Test
+    fun `emits SuiteFinished for failing Swift Testing suite`() {
+        val result = parser.processLine("""Suite "MyTests" failed after 0.651 seconds""")
+        assertNotNull(result)
+        assertEquals(1, result!!.size)
+        val event = result[0] as TestEvent.SuiteFinished
+        assertEquals("MyTests", event.name)
+    }
+
+    // --- Swift Testing test pass ---
+
+    @Test
+    fun `emits TestStarted and TestFinished for passing Swift Testing test`() {
+        parser.processLine("""Suite "FeatureTests" started""")
+        val result = parser.processLine("    \u2714 \"creates a barbell\" (0.442 seconds)")
+        assertNotNull(result)
+        assertEquals(2, result!!.size)
+
+        val startEvent = result[0] as TestEvent.TestStarted
+        assertEquals("creates a barbell", startEvent.name)
+        assertEquals("FeatureTests", startEvent.className)
+        assertNull(startEvent.targetName)
+        assertEquals("tuist-test://FeatureTests/creates a barbell", startEvent.locationHint)
+
+        val finishEvent = result[1] as TestEvent.TestFinished
+        assertEquals("creates a barbell", finishEvent.name)
+        assertEquals(442L, finishEvent.durationMs)
+    }
+
+    // --- Swift Testing test failure ---
+
+    @Test
+    fun `emits TestStarted TestFailed and TestFinished for failing Swift Testing test`() {
+        parser.processLine("""Suite "FeatureTests" started""")
+        val result = parser.processLine("    \u2718 \"creates a barbell\" (0.208 seconds)")
+        assertNotNull(result)
+        assertEquals(3, result!!.size)
+
+        val startEvent = result[0] as TestEvent.TestStarted
+        assertEquals("creates a barbell", startEvent.name)
+        assertEquals("FeatureTests", startEvent.className)
+        assertNull(startEvent.targetName)
+
+        val failEvent = result[1] as TestEvent.TestFailed
+        assertEquals("creates a barbell", failEvent.name)
+        assertEquals("FeatureTests", failEvent.className)
+        assertEquals("Test failed", failEvent.message)
+        assertEquals(208L, failEvent.durationMs)
+
+        val finishEvent = result[2] as TestEvent.TestFinished
+        assertEquals("creates a barbell", finishEvent.name)
+        assertEquals(208L, finishEvent.durationMs)
+    }
+
+    @Test
+    fun `Swift Testing test uses UnknownSuite when no suite started`() {
+        val result = parser.processLine("    \u2714 \"standalone test\" (0.100 seconds)")
+        assertNotNull(result)
+        val startEvent = result!![0] as TestEvent.TestStarted
+        assertEquals("UnknownSuite", startEvent.className)
+    }
+
     // --- Full fixture integration tests ---
 
     @Test
@@ -272,5 +371,51 @@ class XcodebuildOutputParserTest {
         assertEquals("testFailing", testFailed[0].name)
         assertTrue("Should have 2 accumulated errors", testFailed[0].message.contains("XCTAssertTrue failed"))
         assertTrue("Should have 2 accumulated errors", testFailed[0].message.contains("XCTAssertEqual failed"))
+    }
+
+    // --- Swift Testing fixture integration tests ---
+
+    @Test
+    fun `parses Swift Testing passing fixture into correct event sequence`() {
+        val events = parseFixture("xcodebuild_output_swift_testing_passing.txt")
+
+        val suiteStarted = events.filterIsInstance<TestEvent.SuiteStarted>()
+        assertEquals("Should have 1 suite started", 1, suiteStarted.size)
+        assertEquals("CreateCustomBarbellCommandHandler", suiteStarted[0].name)
+
+        val testStarted = events.filterIsInstance<TestEvent.TestStarted>()
+        assertEquals("Should have 2 tests started", 2, testStarted.size)
+        assertEquals("creates and persists a custom barbell", testStarted[0].name)
+        assertEquals("CreateCustomBarbellCommandHandler", testStarted[0].className)
+        assertNull(testStarted[0].targetName)
+        assertEquals("creates barbell with zero weight", testStarted[1].name)
+
+        val testFinished = events.filterIsInstance<TestEvent.TestFinished>()
+        assertEquals("Should have 2 tests finished", 2, testFinished.size)
+        assertEquals(442L, testFinished[0].durationMs)
+        assertEquals(208L, testFinished[1].durationMs)
+
+        val testFailed = events.filterIsInstance<TestEvent.TestFailed>()
+        assertTrue("Should have no failures", testFailed.isEmpty())
+
+        val suiteFinished = events.filterIsInstance<TestEvent.SuiteFinished>()
+        assertEquals("Should have 1 suite finished", 1, suiteFinished.size)
+    }
+
+    @Test
+    fun `parses Swift Testing failing fixture into correct event sequence`() {
+        val events = parseFixture("xcodebuild_output_swift_testing_failing.txt")
+
+        val testStarted = events.filterIsInstance<TestEvent.TestStarted>()
+        assertEquals("Should have 2 tests started", 2, testStarted.size)
+
+        val testFailed = events.filterIsInstance<TestEvent.TestFailed>()
+        assertEquals("Should have 1 failure", 1, testFailed.size)
+        assertEquals("creates barbell with zero weight", testFailed[0].name)
+        assertEquals("CreateCustomBarbellCommandHandler", testFailed[0].className)
+        assertNull(testFailed[0].targetName)
+
+        val suiteFinished = events.filterIsInstance<TestEvent.SuiteFinished>()
+        assertEquals("Should have 1 suite finished", 1, suiteFinished.size)
     }
 }

@@ -1,0 +1,7 @@
+Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test run started.
+Suite "CreateCustomBarbellCommandHandler" started
+    ✔ "creates and persists a custom barbell" (0.442 seconds)
+    ✘ "creates barbell with zero weight" (0.208 seconds)
+Suite "CreateCustomBarbellCommandHandler" failed after 0.651 seconds
+Test Failed
