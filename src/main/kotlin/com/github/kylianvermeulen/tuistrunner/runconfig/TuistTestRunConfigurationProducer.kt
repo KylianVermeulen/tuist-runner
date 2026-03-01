@@ -3,6 +3,7 @@ package com.github.kylianvermeulen.tuistrunner.runconfig
 import com.intellij.execution.actions.ConfigurationContext
 import com.intellij.execution.actions.LazyRunConfigurationProducer
 import com.intellij.execution.configurations.ConfigurationFactory
+import com.intellij.execution.configurations.ConfigurationTypeUtil
 import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
@@ -10,8 +11,10 @@ import com.github.kylianvermeulen.tuistrunner.detection.TuistProjectService
 
 class TuistTestRunConfigurationProducer : LazyRunConfigurationProducer<TuistTestRunConfiguration>() {
 
-    override fun getConfigurationFactory(): ConfigurationFactory =
-        TuistTestConfigurationType().configurationFactories[0]
+    override fun getConfigurationFactory(): ConfigurationFactory {
+        val type = ConfigurationTypeUtil.findConfigurationType(TuistTestConfigurationType::class.java)
+        return type.configurationFactories[0]
+    }
 
     override fun setupConfigurationFromContext(
         configuration: TuistTestRunConfiguration,

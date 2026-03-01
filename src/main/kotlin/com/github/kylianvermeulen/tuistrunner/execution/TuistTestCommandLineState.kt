@@ -42,7 +42,7 @@ class TuistTestCommandLineState(
             exePath = tuistPath
             addParameter("xcodebuild")
             addParameter("test")
-            addParameter("--scheme")
+            addParameter("-scheme")
             addParameter(configuration.schemeName)
 
             configuration.buildOnlyTestingArgument()?.let { onlyTesting ->

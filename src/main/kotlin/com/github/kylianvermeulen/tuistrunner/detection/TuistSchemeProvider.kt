@@ -53,9 +53,14 @@ object TuistSchemeProvider {
         val root = Json.parseToJsonElement(json).jsonObject
         val schemeMap = mutableMapOf<String, MutableSet<String>>()
 
-        val projects = root["projects"]?.jsonObject ?: return emptyList()
+        val projectsElement = root["projects"] ?: return emptyList()
+        val projectElements: List<JsonElement> = when (projectsElement) {
+            is JsonObject -> projectsElement.values.toList()
+            is JsonArray -> projectsElement.filterIsInstance<JsonObject>()
+            else -> return emptyList()
+        }
 
-        for ((_, projectElement) in projects) {
+        for (projectElement in projectElements) {
             val project = projectElement.jsonObject
 
             // Collect explicit schemes with test actions
@@ -77,7 +82,7 @@ object TuistSchemeProvider {
             for ((targetName, targetElement) in targets) {
                 val target = targetElement.jsonObject
                 val product = target["product"]?.jsonPrimitive?.contentOrNull
-                if (product == "unitTests" || product == "uiTests") {
+                if (product in setOf("unitTests", "uiTests", "unit_tests", "ui_tests")) {
                     val inferredScheme = inferSchemeName(targetName)
                     if (inferredScheme != null) {
                         schemeMap.getOrPut(inferredScheme) { mutableSetOf() }.add(targetName)

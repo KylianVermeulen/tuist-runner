@@ -63,6 +63,45 @@ class TuistSchemeProviderTest {
     }
 
     @Test
+    fun `parseGraphJson handles projects as array`() {
+        val json = loadFixture("graph_with_array_projects.json")
+        val schemes = TuistSchemeProvider.parseGraphJson(json)
+
+        val schemeNames = schemes.map { it.name }
+        assertTrue("Should contain Core scheme", "Core" in schemeNames)
+        assertTrue("Should contain Liftix scheme", "Liftix" in schemeNames)
+        assertEquals("Should have exactly 2 schemes", 2, schemes.size)
+
+        val coreScheme = schemes.first { it.name == "Core" }
+        assertTrue("Core should include CoreTests", "CoreTests" in coreScheme.testTargets)
+    }
+
+    @Test
+    fun `parseGraphJson handles real tuist graph with alternating key-value array and snake_case products`() {
+        val json = loadFixture("graph_real_tuist.json")
+        val schemes = TuistSchemeProvider.parseGraphJson(json)
+
+        val schemeNames = schemes.map { it.name }
+        assertTrue("Should contain Liftix scheme", "Liftix" in schemeNames)
+        assertEquals("Should have exactly 1 scheme", 1, schemes.size)
+
+        val liftixScheme = schemes.first { it.name == "Liftix" }
+        assertTrue("Should include LiftixTests", "LiftixTests" in liftixScheme.testTargets)
+    }
+
+    @Test
+    fun `parseGraphJson parses full real tuist graph output`() {
+        val json = loadFixture("graph_liftix.json")
+        val schemes = TuistSchemeProvider.parseGraphJson(json)
+
+        val schemeNames = schemes.map { it.name }
+        assertTrue("Should contain Liftix scheme", "Liftix" in schemeNames)
+
+        val liftixScheme = schemes.first { it.name == "Liftix" }
+        assertTrue("Should include LiftixTests", "LiftixTests" in liftixScheme.testTargets)
+    }
+
+    @Test
     fun `parseGraphJson returns sorted results`() {
         val json = loadFixture("graph_with_test_targets.json")
         val schemes = TuistSchemeProvider.parseGraphJson(json)
