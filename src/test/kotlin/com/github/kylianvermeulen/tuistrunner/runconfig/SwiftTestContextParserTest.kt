@@ -10,12 +10,11 @@ class SwiftTestContextParserTest {
     private fun loadFixture(name: String): String =
         javaClass.classLoader.getResource("fixtures/$name")!!.readText()
 
-    // --- detectTestContext ---
+    // --- XCTestCase: detectTestContext ---
 
     @Test
     fun `cursor inside test method returns className and methodName`() {
         val text = loadFixture("swift_test_class.swift")
-        // Find the offset of "testExample" inside the file
         val offset = text.indexOf("func testExample")
         assertTrue("Fixture should contain testExample", offset >= 0)
 
@@ -56,7 +55,6 @@ class SwiftTestContextParserTest {
         val context = SwiftTestContextParser.detectTestContext(text, offset)
         assertNotNull(context)
         assertEquals("FeatureTests", context!!.className)
-        // helperMethod doesn't start with "test", so no method detected
         assertNull(context.methodName)
     }
 
@@ -105,7 +103,7 @@ class SwiftTestContextParserTest {
         assertEquals("testBar", context.methodName)
     }
 
-    // --- findAllTestElements ---
+    // --- XCTestCase: findAllTestElements ---
 
     @Test
     fun `findAllTestElements returns all classes and methods`() {
@@ -161,5 +159,163 @@ class SwiftTestContextParserTest {
 
         val firstMethod = elements.filterIsInstance<TestElement.TestMethod>().first()
         assertEquals(text.indexOf("func testExample"), firstMethod.offset)
+    }
+
+    // --- Swift Testing (@Suite / @Test): detectTestContext ---
+
+    @Test
+    fun `detects @Suite struct as test container`() {
+        val text = loadFixture("swift_testing_suite.swift")
+        val offset = text.indexOf("@Suite")
+        assertTrue(offset >= 0)
+
+        val context = SwiftTestContextParser.detectTestContext(text, offset)
+        assertNotNull(context)
+        assertEquals("FeatureSuiteTests", context!!.className)
+        assertNull(context.methodName)
+    }
+
+    @Test
+    fun `cursor on @Test method in @Suite struct returns method name`() {
+        val text = loadFixture("swift_testing_suite.swift")
+        val offset = text.indexOf("func addition")
+        assertTrue(offset >= 0)
+
+        val context = SwiftTestContextParser.detectTestContext(text, offset)
+        assertNotNull(context)
+        assertEquals("FeatureSuiteTests", context!!.className)
+        assertEquals("addition", context.methodName)
+    }
+
+    @Test
+    fun `detects @Test method with display name argument`() {
+        val text = loadFixture("swift_testing_suite.swift")
+        val offset = text.indexOf("func subtraction")
+        assertTrue(offset >= 0)
+
+        val context = SwiftTestContextParser.detectTestContext(text, offset)
+        assertNotNull(context)
+        assertEquals("FeatureSuiteTests", context!!.className)
+        assertEquals("subtraction", context.methodName)
+    }
+
+    @Test
+    fun `helper method in @Suite struct returns class only`() {
+        val text = loadFixture("swift_testing_suite.swift")
+        val offset = text.indexOf("func helperMethod")
+        assertTrue(offset >= 0)
+
+        val context = SwiftTestContextParser.detectTestContext(text, offset)
+        assertNotNull(context)
+        assertEquals("FeatureSuiteTests", context!!.className)
+        assertNull(context.methodName)
+    }
+
+    @Test
+    fun `detects @Test methods in struct without @Suite annotation`() {
+        val text = loadFixture("swift_testing_no_suite.swift")
+        val offset = text.indexOf("func fetchData")
+        assertTrue(offset >= 0)
+
+        val context = SwiftTestContextParser.detectTestContext(text, offset)
+        assertNotNull(context)
+        assertEquals("NetworkTests", context!!.className)
+        assertEquals("fetchData", context.methodName)
+    }
+
+    @Test
+    fun `detects @Test with arguments parameter`() {
+        val text = loadFixture("swift_testing_no_suite.swift")
+        val offset = text.indexOf("func parameterized")
+        assertTrue(offset >= 0)
+
+        val context = SwiftTestContextParser.detectTestContext(text, offset)
+        assertNotNull(context)
+        assertEquals("NetworkTests", context!!.className)
+        assertEquals("parameterized", context.methodName)
+    }
+
+    @Test
+    fun `cursor outside @Test struct with no @Suite returns null`() {
+        val text = loadFixture("swift_testing_no_suite.swift")
+        val offset = text.indexOf("import Testing")
+        assertTrue(offset >= 0)
+
+        val context = SwiftTestContextParser.detectTestContext(text, offset)
+        assertNull(context)
+    }
+
+    // --- Swift Testing: findAllTestElements ---
+
+    @Test
+    fun `findAllTestElements detects @Suite struct and @Test methods`() {
+        val text = loadFixture("swift_testing_suite.swift")
+        val elements = SwiftTestContextParser.findAllTestElements(text)
+
+        val classes = elements.filterIsInstance<TestElement.TestClass>()
+        assertEquals(1, classes.size)
+        assertEquals("FeatureSuiteTests", classes[0].className)
+
+        val methods = elements.filterIsInstance<TestElement.TestMethod>()
+        assertEquals(2, methods.size)
+        assertEquals("addition", methods[0].methodName)
+        assertEquals("subtraction", methods[1].methodName)
+    }
+
+    @Test
+    fun `findAllTestElements detects @Test methods without @Suite`() {
+        val text = loadFixture("swift_testing_no_suite.swift")
+        val elements = SwiftTestContextParser.findAllTestElements(text)
+
+        val classes = elements.filterIsInstance<TestElement.TestClass>()
+        assertEquals(1, classes.size)
+        assertEquals("NetworkTests", classes[0].className)
+
+        val methods = elements.filterIsInstance<TestElement.TestMethod>()
+        assertEquals(2, methods.size)
+        assertEquals("fetchData", methods[0].methodName)
+        assertEquals("parameterized", methods[1].methodName)
+    }
+
+    // --- Mixed XCTestCase + Swift Testing ---
+
+    @Test
+    fun `findAllTestElements handles mixed XCTestCase and Swift Testing`() {
+        val text = loadFixture("swift_testing_mixed.swift")
+        val elements = SwiftTestContextParser.findAllTestElements(text)
+
+        val classes = elements.filterIsInstance<TestElement.TestClass>()
+        assertEquals(2, classes.size)
+        assertEquals("LegacyTests", classes[0].className)
+        assertEquals("ModernTests", classes[1].className)
+
+        val methods = elements.filterIsInstance<TestElement.TestMethod>()
+        assertEquals(2, methods.size)
+        assertEquals("testOldStyle", methods[0].methodName)
+        assertEquals("LegacyTests", methods[0].className)
+        assertEquals("newStyle", methods[1].methodName)
+        assertEquals("ModernTests", methods[1].className)
+    }
+
+    @Test
+    fun `detectTestContext in XCTest class of mixed file`() {
+        val text = loadFixture("swift_testing_mixed.swift")
+        val offset = text.indexOf("func testOldStyle")
+
+        val context = SwiftTestContextParser.detectTestContext(text, offset)
+        assertNotNull(context)
+        assertEquals("LegacyTests", context!!.className)
+        assertEquals("testOldStyle", context.methodName)
+    }
+
+    @Test
+    fun `detectTestContext in @Suite struct of mixed file`() {
+        val text = loadFixture("swift_testing_mixed.swift")
+        val offset = text.indexOf("func newStyle")
+
+        val context = SwiftTestContextParser.detectTestContext(text, offset)
+        assertNotNull(context)
+        assertEquals("ModernTests", context!!.className)
+        assertEquals("newStyle", context.methodName)
     }
 }
