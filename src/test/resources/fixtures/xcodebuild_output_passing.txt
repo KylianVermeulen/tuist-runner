@@ -1,0 +1,10 @@
+Test Suite 'AllTests' started at 2025-01-15 10:30:00.000
+Test Suite 'MyAppTests.xctest' started at 2025-01-15 10:30:00.000
+Test Suite 'FeatureTests' started at 2025-01-15 10:30:00.000
+Test Case '-[MyAppTests.FeatureTests testExample]' started.
+Test Case '-[MyAppTests.FeatureTests testExample]' passed (0.001 seconds).
+Test Case '-[MyAppTests.FeatureTests testAnother]' started.
+Test Case '-[MyAppTests.FeatureTests testAnother]' passed (0.042 seconds).
+Test Suite 'FeatureTests' passed at 2025-01-15 10:30:00.043.
+Test Suite 'MyAppTests.xctest' passed at 2025-01-15 10:30:00.043.
+Test Suite 'AllTests' passed at 2025-01-15 10:30:00.043.

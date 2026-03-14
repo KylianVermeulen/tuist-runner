@@ -14,5 +14,11 @@
         <postStartupActivity
             implementation="com.github.kylianvermeulen.tuistrunner.detection.TuistProjectDetectorActivity"/>
         <notificationGroup id="Tuist Runner" displayType="BALLOON"/>
+        <testLocator
+            implementation="com.github.kylianvermeulen.tuistrunner.testlocator.TuistTestLocator"/>
+        <runConfigurationProducer
+            implementation="com.github.kylianvermeulen.tuistrunner.runconfig.TuistTestRunConfigurationProducer"/>
+        <runLineMarkerContributor language=""
+            implementationClass="com.github.kylianvermeulen.tuistrunner.linemarker.TuistTestRunLineMarkerContributor"/>
     </extensions>
 </idea-plugin>
