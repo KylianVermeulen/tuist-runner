@@ -1,0 +1,3 @@
+class RegularClass {
+    func doSomething() {}
+}

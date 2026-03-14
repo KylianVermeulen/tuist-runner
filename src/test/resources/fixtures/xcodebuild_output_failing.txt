@@ -1,0 +1,9 @@
+Test Suite 'AllTests' started at 2025-01-15 10:30:00.000
+Test Suite 'MyAppTests.xctest' started at 2025-01-15 10:30:00.000
+Test Suite 'FeatureTests' started at 2025-01-15 10:30:00.000
+Test Case '-[MyAppTests.FeatureTests testFailure]' started.
+/Users/dev/Project/Tests/FeatureTests.swift:42: error: -[MyAppTests.FeatureTests testFailure] : XCTAssertEqual failed: ("expected") is not equal to ("actual")
+Test Case '-[MyAppTests.FeatureTests testFailure]' failed (0.005 seconds).
+Test Suite 'FeatureTests' failed at 2025-01-15 10:30:00.005.
+Test Suite 'MyAppTests.xctest' failed at 2025-01-15 10:30:00.005.
+Test Suite 'AllTests' failed at 2025-01-15 10:30:00.005.

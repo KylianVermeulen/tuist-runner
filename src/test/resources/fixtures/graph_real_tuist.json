@@ -1,0 +1,38 @@
+{
+  "dependencies" : [],
+  "projects" : [
+    "/path/to/Liftix",
+    {
+      "additionalFiles" : [],
+      "name" : "Liftix",
+      "path" : "/path/to/Liftix",
+      "schemes" : [],
+      "targets" : {
+        "Liftix" : {
+          "name" : "Liftix",
+          "product" : "app",
+          "sources" : []
+        },
+        "LiftixTests" : {
+          "name" : "LiftixTests",
+          "product" : "unit_tests",
+          "sources" : []
+        }
+      }
+    },
+    "/path/to/swift-collections",
+    {
+      "additionalFiles" : [],
+      "name" : "swift-collections",
+      "path" : "/path/to/swift-collections",
+      "schemes" : [],
+      "targets" : {
+        "BitCollections" : {
+          "name" : "BitCollections",
+          "product" : "staticFramework",
+          "sources" : []
+        }
+      }
+    }
+  ]
+}
