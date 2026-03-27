@@ -21,4 +21,13 @@
         <runLineMarkerContributor language=""
             implementationClass="com.github.kylianvermeulen.tuistrunner.linemarker.TuistTestRunLineMarkerContributor"/>
     </extensions>
+
+    <actions>
+        <action id="TuistRunAllTests"
+            class="com.github.kylianvermeulen.tuistrunner.actions.TuistRunAllTestsAction"
+            text="Run All Tuist Tests"
+            description="Run all tests in a Tuist scheme">
+            <add-to-group group-id="RunMenu" anchor="after" relative-to-action="RunConfiguration"/>
+        </action>
+    </actions>
 </idea-plugin>

@@ -4,6 +4,7 @@ import com.intellij.execution.lineMarker.ExecutorAction
 import com.intellij.execution.lineMarker.RunLineMarkerContributor
 import com.intellij.icons.AllIcons
 import com.intellij.psi.PsiElement
+import com.intellij.psi.util.PsiTreeUtil
 import com.github.kylianvermeulen.tuistrunner.runconfig.SwiftTestContextParser
 
 class TuistTestRunLineMarkerContributor : RunLineMarkerContributor() {
@@ -13,6 +14,13 @@ class TuistTestRunLineMarkerContributor : RunLineMarkerContributor() {
     override fun getSlowInfo(element: PsiElement): Info? {
         val file = element.containingFile ?: return null
         if (!file.name.endsWith(".swift")) return null
+
+        // Only process leaf elements to avoid duplicate gutter actions
+        if (element.firstChild != null) return null
+
+        // Deduplicate: skip if a previous leaf shares the same offset
+        val prevLeaf = PsiTreeUtil.prevLeaf(element)
+        if (prevLeaf != null && prevLeaf.textOffset == element.textOffset) return null
 
         val fileText = file.text ?: return null
         val elements = SwiftTestContextParser.findAllTestElements(fileText)

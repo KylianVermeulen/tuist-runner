@@ -41,25 +41,31 @@ class TuistTestRunConfigurationTest {
 
     @Test
     fun `suggestedName with class and method`() {
-        val name = suggestedName("MyScheme", "FeatureTests", "testExample")
+        val name = suggestedName("MyScheme", "MyAppTests", "FeatureTests", "testExample")
         assertEquals("FeatureTests.testExample", name)
     }
 
     @Test
     fun `suggestedName with class only`() {
-        val name = suggestedName("MyScheme", "FeatureTests", null)
+        val name = suggestedName("MyScheme", "MyAppTests", "FeatureTests", null)
         assertEquals("FeatureTests", name)
     }
 
     @Test
+    fun `suggestedName with target only`() {
+        val name = suggestedName("MyScheme", "MyAppTests", null, null)
+        assertEquals("MyScheme (MyAppTests)", name)
+    }
+
+    @Test
     fun `suggestedName with no class falls back to scheme`() {
-        val name = suggestedName("MyScheme", null, null)
+        val name = suggestedName("MyScheme", null, null, null)
         assertEquals("MyScheme", name)
     }
 
     @Test
     fun `suggestedName with blank scheme and no class`() {
-        val name = suggestedName("", null, null)
+        val name = suggestedName("", null, null, null)
         assertEquals("Tuist Test", name)
     }
 
@@ -69,10 +75,11 @@ class TuistTestRunConfigurationTest {
         return if (parts.isEmpty()) null else parts.joinToString("/")
     }
 
-    private fun suggestedName(scheme: String, cls: String?, method: String?): String {
+    private fun suggestedName(scheme: String, target: String?, cls: String?, method: String?): String {
         return when {
             cls != null && method != null -> "$cls.$method"
             cls != null -> cls
+            target != null -> "$scheme ($target)"
             else -> scheme.ifBlank { "Tuist Test" }
         }
     }

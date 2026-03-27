@@ -52,11 +52,13 @@ class TuistTestRunConfiguration(
     }
 
     override fun suggestedName(): String {
+        val target = testTarget
         val cls = testClass
         val method = testMethod
         return when {
             cls != null && method != null -> "$cls.$method"
             cls != null -> cls
+            target != null -> "$schemeName ($target)"
             else -> schemeName.ifBlank { "Tuist Test" }
         }
     }

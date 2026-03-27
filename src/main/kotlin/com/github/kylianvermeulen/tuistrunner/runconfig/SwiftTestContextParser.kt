@@ -38,7 +38,7 @@ object SwiftTestContextParser {
     fun detectTestContext(fileText: String, offset: Int): TestContext? {
         val allContainers = findAllContainerRanges(fileText)
 
-        for ((className, classOffset, classEnd, testMethodFinder) in allContainers) {
+        for ((className, classOffset, classEnd, _, testMethodFinder) in allContainers) {
             if (offset < classOffset || offset > classEnd) continue
 
             val classBody = fileText.substring(classOffset, classEnd)
@@ -76,12 +76,12 @@ object SwiftTestContextParser {
         val elements = mutableListOf<TestElement>()
         val allContainers = findAllContainerRanges(fileText)
 
-        for ((className, classOffset, classEnd, testMethodFinder) in allContainers) {
-            elements.add(TestElement.TestClass(className, classOffset))
+        for ((className, startOffset, classEnd, classKeywordOffset, testMethodFinder) in allContainers) {
+            elements.add(TestElement.TestClass(className, classKeywordOffset))
 
-            val classBody = fileText.substring(classOffset, classEnd)
+            val classBody = fileText.substring(startOffset, classEnd)
             for ((methodName, methodRelativeOffset) in testMethodFinder(classBody)) {
-                val methodAbsoluteOffset = classOffset + methodRelativeOffset
+                val methodAbsoluteOffset = startOffset + methodRelativeOffset
                 elements.add(TestElement.TestMethod(className, methodName, methodAbsoluteOffset))
             }
         }
@@ -93,6 +93,7 @@ object SwiftTestContextParser {
         val className: String,
         val startOffset: Int,
         val endOffset: Int,
+        val classKeywordOffset: Int = startOffset,
         val testMethodFinder: (String) -> List<Pair<String, Int>>,
     )
 
@@ -128,7 +129,11 @@ object SwiftTestContextParser {
             // Skip if this range overlaps with an already-found XCTestCase container
             if (containers.any { it.startOffset == classStart || (classStart >= it.startOffset && classStart < it.endOffset) }) continue
 
-            containers.add(ContainerInfo(className, classStart, classEnd, ::findSwiftTestingMethods))
+            // Compute offset of the struct/class/enum keyword for gutter icon placement
+            val keywordMatch = Regex("""(?:struct|class|enum)\s+""").find(match.value)
+            val keywordOffset = if (keywordMatch != null) classStart + keywordMatch.range.first else classStart
+
+            containers.add(ContainerInfo(className, classStart, classEnd, keywordOffset, ::findSwiftTestingMethods))
         }
 
         // Standalone @Test methods in types that don't have @Suite annotation.
@@ -148,7 +153,7 @@ object SwiftTestContextParser {
             // Only include if it contains @Test annotated methods
             val testMethods = findSwiftTestingMethods(classBody)
             if (testMethods.isNotEmpty()) {
-                containers.add(ContainerInfo(className, classStart, classEnd, ::findSwiftTestingMethods))
+                containers.add(ContainerInfo(className, classStart, classEnd, classStart, ::findSwiftTestingMethods))
             }
         }
 

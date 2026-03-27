@@ -161,6 +161,15 @@ class SwiftTestContextParserTest {
         assertEquals(text.indexOf("func testExample"), firstMethod.offset)
     }
 
+    @Test
+    fun `findAllTestElements @Suite class offset points to struct keyword`() {
+        val text = loadFixture("swift_testing_suite.swift")
+        val elements = SwiftTestContextParser.findAllTestElements(text)
+
+        val classElement = elements.filterIsInstance<TestElement.TestClass>().first()
+        assertEquals(text.indexOf("struct FeatureSuiteTests"), classElement.offset)
+    }
+
     // --- Swift Testing (@Suite / @Test): detectTestContext ---
 
     @Test

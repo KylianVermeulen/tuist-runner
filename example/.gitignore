@@ -1,0 +1,7 @@
+*.xcodeproj
+*.xcworkspace
+DerivedData/
+Derived/
+build/
+.build/
+graph.json

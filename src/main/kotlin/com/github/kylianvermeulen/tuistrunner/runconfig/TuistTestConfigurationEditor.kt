@@ -38,13 +38,30 @@ class TuistTestConfigurationEditor(private val project: Project) :
         }
     }
     private val additionalArgsField = JTextField()
-    private val testTargetField = JTextField().apply { isEditable = false }
-    private val testClassField = JTextField().apply { isEditable = false }
-    private val testMethodField = JTextField().apply { isEditable = false }
+    private val testTargetComboBox = ComboBox<String>().apply { isEditable = true }
+    private val testClassField = JTextField()
+    private val testMethodField = JTextField()
 
     init {
         loadSchemes()
         loadSimulators()
+
+        schemeComboBox.addActionListener {
+            updateTestTargets()
+        }
+    }
+
+    private fun updateTestTargets() {
+        val selectedScheme = (schemeComboBox.editor.item as? String)?.trim() ?: ""
+        val service = project.service<TuistProjectService>()
+        val scheme = service.availableSchemes.firstOrNull { it.name == selectedScheme }
+        val targets = scheme?.testTargets ?: emptyList()
+        val currentSelection = (testTargetComboBox.editor.item as? String) ?: ""
+        val model = DefaultComboBoxModel(targets.toTypedArray())
+        testTargetComboBox.model = model
+        if (currentSelection.isNotEmpty()) {
+            testTargetComboBox.editor.item = currentSelection
+        }
     }
 
     private fun loadSchemes() {
@@ -83,7 +100,8 @@ class TuistTestConfigurationEditor(private val project: Project) :
     override fun resetEditorFrom(configuration: TuistTestRunConfiguration) {
         schemeComboBox.editor.item = configuration.schemeName
         additionalArgsField.text = configuration.additionalArguments
-        testTargetField.text = configuration.testTarget ?: ""
+        updateTestTargets()
+        testTargetComboBox.editor.item = configuration.testTarget ?: ""
         testClassField.text = configuration.testClass ?: ""
         testMethodField.text = configuration.testMethod ?: ""
 
@@ -104,7 +122,7 @@ class TuistTestConfigurationEditor(private val project: Project) :
     override fun applyEditorTo(configuration: TuistTestRunConfiguration) {
         configuration.schemeName = (schemeComboBox.editor.item as? String)?.trim() ?: ""
         configuration.additionalArguments = additionalArgsField.text.trim()
-        configuration.testTarget = testTargetField.text.ifBlank { null }
+        configuration.testTarget = (testTargetComboBox.editor.item as? String)?.trim().let { if (it.isNullOrBlank()) null else it }
         configuration.testClass = testClassField.text.ifBlank { null }
         configuration.testMethod = testMethodField.text.ifBlank { null }
         configuration.destinationUdid = (destinationComboBox.selectedItem as? Simulator)?.udid
@@ -141,7 +159,7 @@ class TuistTestConfigurationEditor(private val project: Project) :
                 .resizableColumn()
         }
         row(TuistBundle.message("runconfig.editor.testTarget.label")) {
-            cell(testTargetField)
+            cell(testTargetComboBox)
                 .align(AlignX.FILL)
                 .resizableColumn()
         }
